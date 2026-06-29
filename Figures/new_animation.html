@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIRS – CO Mid-Troposphere Animation</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #111827;
+        color: #d1d9e6;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 16px 48px;
+        min-height: 100vh;
+      }
+      h1 {
+        font-size: 1.05rem;
+        font-weight: 400;
+        color: #7ec8e3;
+        letter-spacing: 0.07em;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .lbl {
+        font-size: 0.85rem;
+        color: #8899aa;
+      }
+      select {
+        background: #1e293b;
+        color: #d1d9e6;
+        border: 1px solid #3a6080;
+        padding: 5px 12px;
+        border-radius: 5px;
+        font-size: 0.88rem;
+        cursor: pointer;
+        outline: none;
+      }
+      select:focus {
+        border-color: #7ec8e3;
+      }
+      #var-row {
+        margin-bottom: 14px;
+      }
+      #frame-wrap {
+        position: relative;
+        max-width: 960px;
+        width: 100%;
+        background: #fff;
+        border: 2px solid #1e3a52;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.65);
+      }
+      #frame-img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      #date-tag {
+        position: absolute;
+        bottom: 10px;
+        right: 12px;
+        background: rgba(10, 20, 38, 0.72);
+        color: #b8d8f0;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        pointer-events: none;
+        letter-spacing: 0.06em;
+      }
+      #scrub-wrap {
+        width: 100%;
+        max-width: 960px;
+        margin-top: 9px;
+        padding: 0 2px;
+      }
+      #scrubber {
+        width: 100%;
+        accent-color: #7ec8e3;
+        cursor: pointer;
+      }
+      #info-line {
+        font-size: 0.75rem;
+        color: #4a6070;
+        margin-top: 5px;
+        letter-spacing: 0.04em;
+        text-align: center;
+      }
+      #ctrl-row {
+        margin-top: 16px;
+        gap: 8px;
+      }
+      button {
+        background: #1e293b;
+        color: #7ec8e3;
+        border: 1px solid #3a6080;
+        padding: 7px 20px;
+        border-radius: 6px;
+        font-size: 0.93rem;
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s;
+        user-select: none;
+      }
+      button:hover {
+        background: #243a56;
+        color: #b8d8f0;
+      }
+      button:active {
+        background: #7ec8e3;
+        color: #111827;
+      }
+      #play-btn {
+        min-width: 95px;
+      }
+      .sep {
+        color: #1e3a52;
+        font-size: 1.4rem;
+        padding: 0 4px;
+      }
+      #hint {
+        font-size: 0.72rem;
+        color: #374151;
+        margin-top: 18px;
+        letter-spacing: 0.04em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AIRS &mdash; CO Mid-Troposphere &mdash; Sep&nbsp;2002 &ndash; Jan&nbsp;2026</h1>
+
+    <div class="row" id="var-row">
+      <span class="lbl">Variable:</span>
+      <select id="varSel" onchange="switchVar()"></select>
+    </div>
+
+    <div id="frame-wrap">
+      <img id="frame-img" src="" alt="Loading&hellip;" draggable="false" />
+      <div id="date-tag">&mdash;</div>
+    </div>
+
+    <div id="scrub-wrap">
+      <input
+        type="range"
+        id="scrubber"
+        min="0"
+        max="278"
+        value="0"
+        step="1"
+        oninput="seekTo(+this.value)"
+      />
+    </div>
+    <div id="info-line">Frame 1 / 279</div>
+
+    <div class="row" id="ctrl-row">
+      <button onclick="prevFrame()" title="Previous month  [←]">&#9664;&thinsp;Prev</button>
+      <button id="play-btn" onclick="togglePlay()" title="Play / Pause  [Space]">&#9654;&ensp;Play</button>
+      <button onclick="nextFrame()" title="Next month  [→]">Next&thinsp;&#9654;</button>
+      <span class="sep">|</span>
+      <span class="lbl">FPS:</span>
+      <select id="fpsSel" onchange="setFps(+this.value)">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+
+    <div id="hint">
+      Keyboard&thinsp;:&thinsp; Space&thinsp;=&thinsp;play/pause &nbsp;&nbsp;
+      &#8592;/&#8594;&thinsp;=&thinsp;prev/next frame
+    </div>
+
+    <script>
+      const DATES = ["Sep 2002","Oct 2002","Nov 2002","Dec 2002","Jan 2003","Feb 2003","Mar 2003","Apr 2003","May 2003","Jun 2003","Jul 2003","Aug 2003","Sep 2003","Oct 2003","Nov 2003","Dec 2003","Jan 2004","Feb 2004","Mar 2004","Apr 2004","May 2004","Jun 2004","Jul 2004","Aug 2004","Sep 2004","Oct 2004","Nov 2004","Dec 2004","Jan 2005","Feb 2005","Mar 2005","Apr 2005","May 2005","Jun 2005","Jul 2005","Aug 2005","Sep 2005","Oct 2005","Nov 2005","Dec 2005","Jan 2006","Feb 2006","Mar 2006","Apr 2006","May 2006","Jun 2006","Jul 2006","Aug 2006","Sep 2006","Oct 2006","Nov 2006","Dec 2006","Jan 2007","Feb 2007","Mar 2007","Apr 2007","May 2007","Jun 2007","Jul 2007","Aug 2007","Sep 2007","Oct 2007","Nov 2007","Dec 2007","Jan 2008","Feb 2008","Mar 2008","Apr 2008","May 2008","Jun 2008","Jul 2008","Aug 2008","Sep 2008","Oct 2008","Nov 2008","Dec 2008","Jan 2009","Feb 2009","Mar 2009","Apr 2009","May 2009","Jun 2009","Jul 2009","Aug 2009","Sep 2009","Oct 2009","Nov 2009","Dec 2009","Jan 2010","Feb 2010","Mar 2010","Apr 2010","May 2010","Jun 2010","Jul 2010","Aug 2010","Sep 2010","Oct 2010","Nov 2010","Dec 2010","Jan 2011","Feb 2011","Mar 2011","Apr 2011","May 2011","Jun 2011","Jul 2011","Aug 2011","Sep 2011","Oct 2011","Nov 2011","Dec 2011","Jan 2012","Feb 2012","Mar 2012","Apr 2012","May 2012","Jun 2012","Jul 2012","Aug 2012","Sep 2012","Oct 2012","Nov 2012","Dec 2012","Jan 2013","Feb 2013","Mar 2013","Apr 2013","May 2013","Jun 2013","Jul 2013","Aug 2013","Sep 2013","Oct 2013","Nov 2013","Dec 2013","Jan 2014","Feb 2014","Mar 2014","Apr 2014","May 2014","Jun 2014","Jul 2014","Aug 2014","Sep 2014","Oct 2014","Nov 2014","Dec 2014","Jan 2015","Feb 2015","Mar 2015","Apr 2015","May 2015","Jun 2015","Jul 2015","Aug 2015","Sep 2015","Oct 2015","Nov 2015","Dec 2015","Jan 2016","Feb 2016","Mar 2016","Apr 2016","May 2016","Jun 2016","Jul 2016","Aug 2016","Sep 2016","Oct 2016","Nov 2016","Dec 2016","Jan 2017","Feb 2017","Mar 2017","Apr 2017","May 2017","Jun 2017","Jul 2017","Aug 2017","Sep 2017","Oct 2017","Nov 2017","Dec 2017","Jan 2018","Feb 2018","Mar 2018","Apr 2018","May 2018","Jun 2018","Jul 2018","Aug 2018","Sep 2018","Oct 2018","Nov 2018","Dec 2018","Jan 2019","Feb 2019","Mar 2019","Apr 2019","May 2019","Jun 2019","Jul 2019","Aug 2019","Sep 2019","Oct 2019","Nov 2019","Dec 2019","Jan 2020","Feb 2020","Mar 2020","Apr 2020","May 2020","Jun 2020","Jul 2020","Aug 2020","Sep 2020","Oct 2020","Nov 2020","Dec 2020","Jan 2021","Feb 2021","Mar 2021","Apr 2021","May 2021","Jun 2021","Jul 2021","Aug 2021","Sep 2021","Oct 2021","Nov 2021","Dec 2021","Jan 2022","Feb 2022","Mar 2022","Apr 2022","May 2022","Jun 2022","Jul 2022","Aug 2022","Sep 2022","Oct 2022","Nov 2022","Dec 2022","Jan 2023","Feb 2023","Mar 2023","Apr 2023","May 2023","Jun 2023","Jul 2023","Aug 2023","Oct 2023","Nov 2023","Dec 2023","Jan 2024","Feb 2024","Mar 2024","Apr 2024","May 2024","Jun 2024","Jul 2024","Aug 2024","Sep 2024","Oct 2024","Nov 2024","Dec 2024","Jan 2025","Feb 2025","Mar 2025","Apr 2025","May 2025","Jun 2025","Jul 2025","Aug 2025","Sep 2025","Oct 2025","Nov 2025","Jan 2026"];
+
+      const FRAMES = ["200209.png","200210.png","200211.png","200212.png","200301.png","200302.png","200303.png","200304.png","200305.png","200306.png","200307.png","200308.png","200309.png","200310.png","200311.png","200312.png","200401.png","200402.png","200403.png","200404.png","200405.png","200406.png","200407.png","200408.png","200409.png","200410.png","200411.png","200412.png","200501.png","200502.png","200503.png","200504.png","200505.png","200506.png","200507.png","200508.png","200509.png","200510.png","200511.png","200512.png","200601.png","200602.png","200603.png","200604.png","200605.png","200606.png","200607.png","200608.png","200609.png","200610.png","200611.png","200612.png","200701.png","200702.png","200703.png","200704.png","200705.png","200706.png","200707.png","200708.png","200709.png","200710.png","200711.png","200712.png","200801.png","200802.png","200803.png","200804.png","200805.png","200806.png","200807.png","200808.png","200809.png","200810.png","200811.png","200812.png","200901.png","200902.png","200903.png","200904.png","200905.png","200906.png","200907.png","200908.png","200909.png","200910.png","200911.png","200912.png","201001.png","201002.png","201003.png","201004.png","201005.png","201006.png","201007.png","201008.png","201009.png","201010.png","201011.png","201012.png","201101.png","201102.png","201103.png","201104.png","201105.png","201106.png","201107.png","201108.png","201109.png","201110.png","201111.png","201112.png","201201.png","201202.png","201203.png","201204.png","201205.png","201206.png","201207.png","201208.png","201209.png","201210.png","201211.png","201212.png","201301.png","201302.png","201303.png","201304.png","201305.png","201306.png","201307.png","201308.png","201309.png","201310.png","201311.png","201312.png","201401.png","201402.png","201403.png","201404.png","201405.png","201406.png","201407.png","201408.png","201409.png","201410.png","201411.png","201412.png","201501.png","201502.png","201503.png","201504.png","201505.png","201506.png","201507.png","201508.png","201509.png","201510.png","201511.png","201512.png","201601.png","201602.png","201603.png","201604.png","201605.png","201606.png","201607.png","201608.png","201609.png","201610.png","201611.png","201612.png","201701.png","201702.png","201703.png","201704.png","201705.png","201706.png","201707.png","201708.png","201709.png","201710.png","201711.png","201712.png","201801.png","201802.png","201803.png","201804.png","201805.png","201806.png","201807.png","201808.png","201809.png","201810.png","201811.png","201812.png","201901.png","201902.png","201903.png","201904.png","201905.png","201906.png","201907.png","201908.png","201909.png","201910.png","201911.png","201912.png","202001.png","202002.png","202003.png","202004.png","202005.png","202006.png","202007.png","202008.png","202009.png","202010.png","202011.png","202012.png","202101.png","202102.png","202103.png","202104.png","202105.png","202106.png","202107.png","202108.png","202109.png","202110.png","202111.png","202112.png","202201.png","202202.png","202203.png","202204.png","202205.png","202206.png","202207.png","202208.png","202209.png","202210.png","202211.png","202212.png","202301.png","202302.png","202303.png","202304.png","202305.png","202306.png","202307.png","202308.png","202310.png","202311.png","202312.png","202401.png","202402.png","202403.png","202404.png","202405.png","202406.png","202407.png","202408.png","202409.png","202410.png","202411.png","202412.png","202501.png","202502.png","202503.png","202504.png","202505.png","202506.png","202507.png","202508.png","202509.png","202510.png","202511.png","202601.png"];
+
+      const VAR_IDS   = ["co_mmr_midtrop"];
+      const VAR_NAMES = ["CO Mid-Troposphere MMR"];
+      const N = FRAMES.length;   // 279
+
+      let varId   = VAR_IDS[0];
+      let frame   = 0;
+      let fps     = 3;
+      let playing = false;
+      let timer   = null;
+
+      /* image preload cache */
+      const cache = {};
+      function preload(from, ahead) {
+        for (let i = from; i < Math.min(from + ahead, N); i++) {
+          if (!cache[i]) {
+            cache[i] = new Image();
+            cache[i].src = imgSrc(i);
+          }
+        }
+      }
+      function imgSrc(n) {
+        return "html_frames_new/" + FRAMES[n];
+      }
+
+      /* display */
+      function show(n) {
+        n = Math.max(0, Math.min(n, N - 1));
+        frame = n;
+        document.getElementById("frame-img").src = imgSrc(n);
+        document.getElementById("date-tag").textContent = DATES[n];
+        document.getElementById("info-line").textContent =
+          "Frame " + (n + 1) + " / " + N + " · " + DATES[n];
+        document.getElementById("scrubber").value = n;
+        preload(n + 1, 8);
+      }
+
+      function seekTo(n)  { if (playing) pause(); show(n); }
+      function nextFrame() { if (playing) pause(); show(frame + 1); }
+      function prevFrame() { if (playing) pause(); show(frame - 1); }
+
+      function togglePlay() { playing ? pause() : play(); }
+
+      function play() {
+        if (frame >= N - 1) frame = 0;
+        playing = true;
+        document.getElementById("play-btn").innerHTML = "&#9646;&#9646;&ensp;Pause";
+        timer = setInterval(() => {
+          frame++;
+          if (frame >= N) { frame = N - 1; pause(); return; }
+          show(frame);
+        }, 1000 / fps);
+      }
+
+      function pause() {
+        playing = false;
+        clearInterval(timer);
+        document.getElementById("play-btn").innerHTML = "&#9654;&ensp;Play";
+      }
+
+      function setFps(f) {
+        fps = f;
+        if (playing) { pause(); play(); }
+      }
+
+      function switchVar() {
+        varId = document.getElementById("varSel").value;
+        pause();
+        show(frame);
+      }
+
+      /* keyboard shortcuts */
+      document.addEventListener("keydown", (e) => {
+        const t = e.target.tagName;
+        if (t === "INPUT" || t === "SELECT") return;
+        if (e.code === "Space")      { e.preventDefault(); togglePlay(); }
+        if (e.code === "ArrowRight") { e.preventDefault(); nextFrame();  }
+        if (e.code === "ArrowLeft")  { e.preventDefault(); prevFrame();  }
+      });
+
+      /* init: populate variable selector */
+      const sel = document.getElementById("varSel");
+      VAR_IDS.forEach((id, i) => {
+        const o = document.createElement("option");
+        o.value = id;
+        o.textContent = VAR_NAMES[i];
+        sel.appendChild(o);
+      });
+      preload(0, 14);
+      show(0);
+    </script>
+  </body>
+</html>

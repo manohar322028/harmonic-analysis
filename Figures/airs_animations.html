@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIRS CLIMCAPS – Animations</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #111827;
+        color: #d1d9e6;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 16px 48px;
+        min-height: 100vh;
+      }
+      h1 {
+        font-size: 1.05rem;
+        font-weight: 400;
+        color: #7ec8e3;
+        letter-spacing: 0.07em;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .lbl {
+        font-size: 0.85rem;
+        color: #8899aa;
+      }
+      select {
+        background: #1e293b;
+        color: #d1d9e6;
+        border: 1px solid #3a6080;
+        padding: 5px 12px;
+        border-radius: 5px;
+        font-size: 0.88rem;
+        cursor: pointer;
+        outline: none;
+      }
+      select:focus {
+        border-color: #7ec8e3;
+      }
+      #var-row {
+        margin-bottom: 14px;
+      }
+      #frame-wrap {
+        position: relative;
+        max-width: 960px;
+        width: 100%;
+        background: #000;
+        border: 2px solid #1e3a52;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.65);
+      }
+      #frame-img {
+        width: 100%;
+        display: block;
+        height: calc(100% + 1cm);
+        min-height: 180px;
+        transform: translateY(-1cm);
+        margin-bottom: -1cm;
+      }
+      #date-tag {
+        position: absolute;
+        bottom: 10px;
+        right: 12px;
+        background: rgba(10, 20, 38, 0.72);
+        color: #b8d8f0;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        pointer-events: none;
+        letter-spacing: 0.06em;
+      }
+      #scrub-wrap {
+        width: 100%;
+        max-width: 960px;
+        margin-top: 9px;
+        padding: 0 2px;
+      }
+      #scrubber {
+        width: 100%;
+        accent-color: #7ec8e3;
+        cursor: pointer;
+      }
+      #info-line {
+        font-size: 0.75rem;
+        color: #4a6070;
+        margin-top: 5px;
+        letter-spacing: 0.04em;
+        text-align: center;
+      }
+      #ctrl-row {
+        margin-top: 16px;
+        gap: 8px;
+      }
+      button {
+        background: #1e293b;
+        color: #7ec8e3;
+        border: 1px solid #3a6080;
+        padding: 7px 20px;
+        border-radius: 6px;
+        font-size: 0.93rem;
+        cursor: pointer;
+        transition:
+          background 0.12s,
+          color 0.12s;
+        user-select: none;
+      }
+      button:hover {
+        background: #243a56;
+        color: #b8d8f0;
+      }
+      button:active {
+        background: #7ec8e3;
+        color: #111827;
+      }
+      #play-btn {
+        min-width: 95px;
+      }
+      .sep {
+        color: #1e3a52;
+        font-size: 1.4rem;
+        padding: 0 4px;
+      }
+      #hint {
+        font-size: 0.72rem;
+        color: #374151;
+        margin-top: 18px;
+        letter-spacing: 0.04em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AIRS CLIMCAPS &mdash; Sep&nbsp;2002 &ndash; Nov&nbsp;2025</h1>
+
+    <div class="row" id="var-row">
+      <span class="lbl">Variable:</span>
+      <select id="varSel" onchange="switchVar()"></select>
+    </div>
+
+    <div id="frame-wrap">
+      <img id="frame-img" src="" alt="Loading…" draggable="false" />
+      <div id="date-tag">—</div>
+    </div>
+
+    <div id="scrub-wrap">
+      <input
+        type="range"
+        id="scrubber"
+        min="0"
+        max="277"
+        value="0"
+        step="1"
+        oninput="seekTo(+this.value)"
+      />
+    </div>
+    <div id="info-line">Frame 1 / 278</div>
+
+    <div class="row" id="ctrl-row">
+      <button onclick="prevFrame()" title="Previous month  [←]">
+        &#9664;&thinsp;Prev
+      </button>
+      <button
+        id="play-btn"
+        onclick="togglePlay()"
+        title="Play / Pause  [Space]"
+      >
+        &#9654;&ensp;Play
+      </button>
+      <button onclick="nextFrame()" title="Next month  [→]">
+        Next&thinsp;&#9654;
+      </button>
+      <span class="sep">|</span>
+      <span class="lbl">FPS:</span>
+      <select id="fpsSel" onchange="setFps(+this.value)">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+
+    <div id="hint">
+      Keyboard&thinsp;: &thinsp;Space&thinsp;=&thinsp;play/pause &nbsp;&nbsp;
+      &#8592;/&#8594;&thinsp;=&thinsp;prev/next frame
+    </div>
+
+    <script>
+      const DATES = [
+        "Sep 2002",
+        "Oct 2002",
+        "Nov 2002",
+        "Dec 2002",
+        "Jan 2003",
+        "Feb 2003",
+        "Mar 2003",
+        "Apr 2003",
+        "May 2003",
+        "Jun 2003",
+        "Jul 2003",
+        "Aug 2003",
+        "Sep 2003",
+        "Oct 2003",
+        "Nov 2003",
+        "Dec 2003",
+        "Jan 2004",
+        "Feb 2004",
+        "Mar 2004",
+        "Apr 2004",
+        "May 2004",
+        "Jun 2004",
+        "Jul 2004",
+        "Aug 2004",
+        "Sep 2004",
+        "Oct 2004",
+        "Nov 2004",
+        "Dec 2004",
+        "Jan 2005",
+        "Feb 2005",
+        "Mar 2005",
+        "Apr 2005",
+        "May 2005",
+        "Jun 2005",
+        "Jul 2005",
+        "Aug 2005",
+        "Sep 2005",
+        "Oct 2005",
+        "Nov 2005",
+        "Dec 2005",
+        "Jan 2006",
+        "Feb 2006",
+        "Mar 2006",
+        "Apr 2006",
+        "May 2006",
+        "Jun 2006",
+        "Jul 2006",
+        "Aug 2006",
+        "Sep 2006",
+        "Oct 2006",
+        "Nov 2006",
+        "Dec 2006",
+        "Jan 2007",
+        "Feb 2007",
+        "Mar 2007",
+        "Apr 2007",
+        "May 2007",
+        "Jun 2007",
+        "Jul 2007",
+        "Aug 2007",
+        "Sep 2007",
+        "Oct 2007",
+        "Nov 2007",
+        "Dec 2007",
+        "Jan 2008",
+        "Feb 2008",
+        "Mar 2008",
+        "Apr 2008",
+        "May 2008",
+        "Jun 2008",
+        "Jul 2008",
+        "Aug 2008",
+        "Sep 2008",
+        "Oct 2008",
+        "Nov 2008",
+        "Dec 2008",
+        "Jan 2009",
+        "Feb 2009",
+        "Mar 2009",
+        "Apr 2009",
+        "May 2009",
+        "Jun 2009",
+        "Jul 2009",
+        "Aug 2009",
+        "Sep 2009",
+        "Oct 2009",
+        "Nov 2009",
+        "Dec 2009",
+        "Jan 2010",
+        "Feb 2010",
+        "Mar 2010",
+        "Apr 2010",
+        "May 2010",
+        "Jun 2010",
+        "Jul 2010",
+        "Aug 2010",
+        "Sep 2010",
+        "Oct 2010",
+        "Nov 2010",
+        "Dec 2010",
+        "Jan 2011",
+        "Feb 2011",
+        "Mar 2011",
+        "Apr 2011",
+        "May 2011",
+        "Jun 2011",
+        "Jul 2011",
+        "Aug 2011",
+        "Sep 2011",
+        "Oct 2011",
+        "Nov 2011",
+        "Dec 2011",
+        "Jan 2012",
+        "Feb 2012",
+        "Mar 2012",
+        "Apr 2012",
+        "May 2012",
+        "Jun 2012",
+        "Jul 2012",
+        "Aug 2012",
+        "Sep 2012",
+        "Oct 2012",
+        "Nov 2012",
+        "Dec 2012",
+        "Jan 2013",
+        "Feb 2013",
+        "Mar 2013",
+        "Apr 2013",
+        "May 2013",
+        "Jun 2013",
+        "Jul 2013",
+        "Aug 2013",
+        "Sep 2013",
+        "Oct 2013",
+        "Nov 2013",
+        "Dec 2013",
+        "Jan 2014",
+        "Feb 2014",
+        "Mar 2014",
+        "Apr 2014",
+        "May 2014",
+        "Jun 2014",
+        "Jul 2014",
+        "Aug 2014",
+        "Sep 2014",
+        "Oct 2014",
+        "Nov 2014",
+        "Dec 2014",
+        "Jan 2015",
+        "Feb 2015",
+        "Mar 2015",
+        "Apr 2015",
+        "May 2015",
+        "Jun 2015",
+        "Jul 2015",
+        "Aug 2015",
+        "Sep 2015",
+        "Oct 2015",
+        "Nov 2015",
+        "Dec 2015",
+        "Jan 2016",
+        "Feb 2016",
+        "Mar 2016",
+        "Apr 2016",
+        "May 2016",
+        "Jun 2016",
+        "Jul 2016",
+        "Aug 2016",
+        "Sep 2016",
+        "Oct 2016",
+        "Nov 2016",
+        "Dec 2016",
+        "Jan 2017",
+        "Feb 2017",
+        "Mar 2017",
+        "Apr 2017",
+        "May 2017",
+        "Jun 2017",
+        "Jul 2017",
+        "Aug 2017",
+        "Sep 2017",
+        "Oct 2017",
+        "Nov 2017",
+        "Dec 2017",
+        "Jan 2018",
+        "Feb 2018",
+        "Mar 2018",
+        "Apr 2018",
+        "May 2018",
+        "Jun 2018",
+        "Jul 2018",
+        "Aug 2018",
+        "Sep 2018",
+        "Oct 2018",
+        "Nov 2018",
+        "Dec 2018",
+        "Jan 2019",
+        "Feb 2019",
+        "Mar 2019",
+        "Apr 2019",
+        "May 2019",
+        "Jun 2019",
+        "Jul 2019",
+        "Aug 2019",
+        "Sep 2019",
+        "Oct 2019",
+        "Nov 2019",
+        "Dec 2019",
+        "Jan 2020",
+        "Feb 2020",
+        "Mar 2020",
+        "Apr 2020",
+        "May 2020",
+        "Jun 2020",
+        "Jul 2020",
+        "Aug 2020",
+        "Sep 2020",
+        "Oct 2020",
+        "Nov 2020",
+        "Dec 2020",
+        "Jan 2021",
+        "Feb 2021",
+        "Mar 2021",
+        "Apr 2021",
+        "May 2021",
+        "Jun 2021",
+        "Jul 2021",
+        "Aug 2021",
+        "Sep 2021",
+        "Oct 2021",
+        "Nov 2021",
+        "Dec 2021",
+        "Jan 2022",
+        "Feb 2022",
+        "Mar 2022",
+        "Apr 2022",
+        "May 2022",
+        "Jun 2022",
+        "Jul 2022",
+        "Aug 2022",
+        "Sep 2022",
+        "Oct 2022",
+        "Nov 2022",
+        "Dec 2022",
+        "Jan 2023",
+        "Feb 2023",
+        "Mar 2023",
+        "Apr 2023",
+        "May 2023",
+        "Jun 2023",
+        "Jul 2023",
+        "Aug 2023",
+        "Oct 2023",
+        "Nov 2023",
+        "Dec 2023",
+        "Jan 2024",
+        "Feb 2024",
+        "Mar 2024",
+        "Apr 2024",
+        "May 2024",
+        "Jun 2024",
+        "Jul 2024",
+        "Aug 2024",
+        "Sep 2024",
+        "Oct 2024",
+        "Nov 2024",
+        "Dec 2024",
+        "Jan 2025",
+        "Feb 2025",
+        "Mar 2025",
+        "Apr 2025",
+        "May 2025",
+        "Jun 2025",
+        "Jul 2025",
+        "Aug 2025",
+        "Sep 2025",
+        "Oct 2025",
+        "Nov 2025",
+      ];
+      const VAR_IDS = [
+        "co2_vmr_uppertrop",
+        "co_mmr_midtrop",
+        "ch4_mmr_midtrop",
+        "o3_tot",
+        "h2o_vap_tot",
+        "surf_air_temp",
+        "surf_temp",
+        "air_temp",
+      ];
+      const VAR_NAMES = [
+        "CO\u2082 Upper Troposphere VMR",
+        "CO Mid-Troposphere MMR",
+        "CH\u2084 Mid-Troposphere MMR",
+        "Total Column Ozone",
+        "Total Column Water Vapour",
+        "Near-Surface Air Temperature",
+        "Surface Skin Temperature",
+        "Air Temperature (column mean + profile)",
+      ];
+      const N = 278;
+
+      let varId = VAR_IDS[0];
+      let frame = 0;
+      let fps = 3;
+      let playing = false;
+      let timer = null;
+
+      /* image preload cache */
+      const cache = {};
+      function preload(vid, from, ahead) {
+        for (let i = from; i < Math.min(from + ahead, N); i++) {
+          const k = vid + ":" + i;
+          if (!cache[k]) {
+            cache[k] = new Image();
+            cache[k].src = imgSrc(vid, i);
+          }
+        }
+      }
+      function imgSrc(vid, n) {
+        return (
+          "html_frames/" +
+          vid +
+          "/frame_" +
+          String(n + 1).padStart(4, "0") +
+          ".jpg"
+        );
+      }
+
+      /* display */
+      function show(n) {
+        n = Math.max(0, Math.min(n, N - 1));
+        frame = n;
+        const img = document.getElementById("frame-img");
+        img.src = imgSrc(varId, n);
+        document.getElementById("date-tag").textContent = DATES[n];
+        document.getElementById("info-line").textContent =
+          "Frame " + (n + 1) + " / " + N + " · " + DATES[n];
+        document.getElementById("scrubber").value = n;
+        preload(varId, n + 1, 8);
+      }
+
+      function seekTo(n) {
+        if (playing) pause();
+        show(n);
+      }
+      function nextFrame() {
+        if (playing) pause();
+        show(frame + 1);
+      }
+      function prevFrame() {
+        if (playing) pause();
+        show(frame - 1);
+      }
+
+      function togglePlay() {
+        playing ? pause() : play();
+      }
+
+      function play() {
+        if (frame >= N - 1) frame = 0;
+        playing = true;
+        document.getElementById("play-btn").innerHTML =
+          "&#9646;&#9646;&ensp;Pause";
+        timer = setInterval(() => {
+          frame++;
+          if (frame >= N) {
+            frame = N - 1;
+            pause();
+            return;
+          }
+          show(frame);
+        }, 1000 / fps);
+      }
+
+      function pause() {
+        playing = false;
+        clearInterval(timer);
+        document.getElementById("play-btn").innerHTML = "&#9654;&ensp;Play";
+      }
+
+      function setFps(f) {
+        fps = f;
+        if (playing) {
+          pause();
+          play();
+        }
+      }
+
+      function switchVar() {
+        varId = document.getElementById("varSel").value;
+        pause();
+        preload(varId, frame, 12);
+        show(frame);
+      }
+
+      /* keyboard shortcuts */
+      document.addEventListener("keydown", (e) => {
+        const t = e.target.tagName;
+        if (t === "INPUT" || t === "SELECT") return;
+        if (e.code === "Space") {
+          e.preventDefault();
+          togglePlay();
+        }
+        if (e.code === "ArrowRight") {
+          e.preventDefault();
+          nextFrame();
+        }
+        if (e.code === "ArrowLeft") {
+          e.preventDefault();
+          prevFrame();
+        }
+      });
+
+      /* init */
+      const sel = document.getElementById("varSel");
+      VAR_IDS.forEach((id, i) => {
+        const o = document.createElement("option");
+        o.value = id;
+        o.textContent = VAR_NAMES[i];
+        sel.appendChild(o);
+      });
+      preload(varId, 0, 14);
+      show(0);
+    </script>
+  </body>
+</html>
